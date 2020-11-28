@@ -1,4 +1,4 @@
-var cubeRotation = 0.0;
+var cubeRotation = 1.0;
 
 main();
 
@@ -162,11 +162,11 @@ function initBuffers(gl) {
   // for each face.
   const plasticColors = [
     [1.0, 0.0, 0.0, 1.0],
-    [1.0, 0.5, 0.0, 1.0],
+    [1.0, 160.0/255, 43.0/255, 1.0],
     [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 1.0, 1.0],
-    [0.0, 0.0, 1.0, 1.0],
+    [41.0/255, 1.0, 76.0/255, 1.0],
+    [66.0/255, 210.0/255, 1.0, 1.0],
+    [129.0/255, 66.0/255, 210.0/255, 1.0],
     [1.0, 0.0, 1.0, 1.0]
   ];
 
@@ -264,14 +264,16 @@ function initBuffers(gl) {
 // Draw the scene.
 //
 function drawScene(gl, programInfo, buffers, deltaTime) {
-  gl.clearColor(1.0, 1.0, 1.0, 1.0);  // Clear to black, fully opaque
+  gl.clearColor(1.0, 1.0, 1.0, 1.0);  // Clear to white, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
   gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
   // Clear the canvas before we start drawing on it.
-
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // Tell WebGL to use our program when drawing
+  gl.useProgram(programInfo.program);
 
   // Create a perspective matrix, a special matrix that is
   // used to simulate the distortion of perspective in a camera.
@@ -280,7 +282,10 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   // and we only want to see objects between 0.1 units
   // and 100 units away from the camera.
 
-  const fieldOfView = 45 * Math.PI / 180;   // in radians
+  function rad(grad) {
+    return grad * Math.PI / 180;
+  }
+  const fieldOfView = rad(60);
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
   const zFar = 100.0;
@@ -298,39 +303,33 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   // the center of the scene.
   const modelViewMatrix = mat4.create();
 
-  // Now move the drawing position a bit to where we want to
-  // start drawing the square.
-
-  mat4.translate(modelViewMatrix,     // destination matrix
-                 modelViewMatrix,     // matrix to translate
-                 [-0.0, 0.0, -20.0]);  // amount to translate
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
-              cubeRotation,     // amount to rotate in radians
-              [0, 0, 1]);       // axis to rotate around (Z)
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
-              cubeRotation * .27,// amount to rotate in radians
-              [0, 1, 0]);       // axis to rotate around (X)
-  mat4.rotate(modelViewMatrix,  // destination matrix
-              modelViewMatrix,  // matrix to rotate
-              cubeRotation * .37,// amount to rotate in radians
-              [1, 0, 0]);       // axis to rotate around (Y)
-
-  const normalMatrix = mat4.create();
-  mat4.invert(normalMatrix, modelViewMatrix);
-  mat4.transpose(normalMatrix, normalMatrix);
-
-  function translateView(v) {
-    mat4.translate(modelViewMatrix, modelViewMatrix, v);
+  function updateModelView() {
     gl.uniformMatrix4fv(
         programInfo.uniformLocations.modelViewMatrix,
         false,
         modelViewMatrix);
+
+    const normalMatrix = mat4.create();
+    mat4.invert(normalMatrix, modelViewMatrix);
+    mat4.transpose(normalMatrix, normalMatrix);
+    gl.uniformMatrix4fv(
+        programInfo.uniformLocations.normalMatrix,
+        false,
+        normalMatrix);
+  }
+  function translateView(v) {
+    mat4.translate(modelViewMatrix, modelViewMatrix, v);
+    updateModelView();
+  }
+  function rotateView(a, v) {
+    mat4.rotate(modelViewMatrix, modelViewMatrix, a, v);
+    updateModelView();
   }
 
-  // Tell WebGL to use our program when drawing
-  gl.useProgram(programInfo.program);
+  translateView([0.0, 0.0, -14.0]);
+  rotateView(cubeRotation, [0, 0, 1]);
+  rotateView(cubeRotation * 0.5, [0, 1, 0]);
+  rotateView(cubeRotation * 0.33, [1, 0, 0]);
 
   // Set the shader uniforms
   gl.uniformMatrix4fv(
@@ -338,20 +337,9 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       false,
       projectionMatrix);
 
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.modelViewMatrix,
-      false,
-      modelViewMatrix);
-
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.normalMatrix,
-      false,
-      normalMatrix);
-
   function negative(p) {
     return [-p[0], -p[1], -p[2]];
   }
-  //function 
   function drawPiece(piece) {
     for (var i = 0; i < piece.cubePositions.length; ++i) {
       const positions = piece.cubePositions[i];
@@ -369,6 +357,23 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       [ 2,  2,  0],
     ]
   };
+  const orangePiece = {
+    color: 1,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 2,  0,  0],
+      [ 0,  0,  2],
+    ]
+  };
+  const yellowPiece = {
+    color: 2,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 2,  0,  0],
+    ]
+  };
   const greenPiece = {
     color: 3,
     cubePositions: [
@@ -378,13 +383,22 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       [ 2,  4,  0],
     ]
   };
-  const orangePiece = {
-    color: 1,
+  const cyanPiece = {
+    color: 4,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 2,  0,  0],
+      [ 0,  2,  0],
+      [ 0,  2,  2],
+    ]
+  };
+  const bluePiece = {
+    color: 5,
     cubePositions: [
       [ 0,  0,  0],
       [ 0,  2,  0],
       [ 2,  0,  0],
-      [ 0,  0,  2],
+      [ 2,  0,  2],
     ]
   };
   const pinkPiece = {
@@ -397,15 +411,32 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     ]
   };
 
+  translateView([-2, -2, -2]);
   drawPiece(redPiece);
 
-  translateView([0, 0, 2]);  
-  drawPiece(greenPiece);
-
-  translateView([0, 0, 2]);  
+  rotateView(rad(90), [0, 0, 1]);
+  translateView([0, -4, 0]);
   drawPiece(orangePiece);
 
-  translateView([0, 0, 2]);  
+  rotateView(rad(-90), [0, 1, 0]);
+  translateView([0, 0, -4]);
+  drawPiece(bluePiece);
+
+  rotateView(rad(180), [0, 1, 0]);
+  translateView([-4, 0, -4]);
+  drawPiece(greenPiece);
+
+  rotateView(rad(90), [0, 1, 0]);
+  translateView([-4, 0, 0]);
+  drawPiece(cyanPiece);
+
+  rotateView(rad(90), [0, 1, 0]);
+  translateView([-2, 2, 2]);
+  drawPiece(yellowPiece);
+
+  rotateView(rad(-90), [0, 1, 0]);
+  rotateView(rad(-90), [1, 0, 0]);
+  translateView([-2, 0, 2]);
   drawPiece(pinkPiece);
 
   // Update the rotation for the next draw
