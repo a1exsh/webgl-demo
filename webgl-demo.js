@@ -17,29 +17,40 @@ function main() {
   }
 
   // Vertex shader program
-
   const vsSource = `
     attribute vec4 aVertexPosition;
+    attribute vec3 aVertexNormal;
     attribute vec4 aVertexColor;
 
+    uniform mat4 uNormalMatrix;
     uniform mat4 uModelViewMatrix;
     uniform mat4 uProjectionMatrix;
 
     varying lowp vec4 vColor;
+    varying highp vec3 vLighting;
 
     void main(void) {
       gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
       vColor = aVertexColor;
+
+      highp vec3 ambientLight = vec3(0.3, 0.3, 0.3);
+      highp vec3 directionalLightColor = vec3(1, 1, 1);
+      highp vec3 directionalVector = normalize(vec3(0.85, 0.8, 0.75));
+
+      highp vec4 transformedNormal = uNormalMatrix * vec4(aVertexNormal, 1.0);
+
+      highp float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+      vLighting = ambientLight + (directionalLightColor * directional);
     }
   `;
 
   // Fragment shader program
-
   const fsSource = `
     varying lowp vec4 vColor;
+    varying highp vec3 vLighting;
 
     void main(void) {
-      gl_FragColor = vColor;
+      gl_FragColor = vec4(vColor.rgb * vLighting, 1.0);
     }
   `;
 
@@ -55,11 +66,13 @@ function main() {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
       vertexColor: gl.getAttribLocation(shaderProgram, 'aVertexColor'),
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+      normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
     }
   };
 
@@ -147,25 +160,24 @@ function initBuffers(gl) {
 
   // Now set up the colors for the faces. We'll use solid colors
   // for each face.
-
-  const faceColors = [
-    [1.0,  1.0,  1.0,  1.0],    // Front face: white
-    [1.0,  0.0,  0.0,  1.0],    // Back face: red
-    [0.0,  1.0,  0.0,  1.0],    // Top face: green
-    [0.0,  0.0,  1.0,  1.0],    // Bottom face: blue
-    [1.0,  1.0,  0.0,  1.0],    // Right face: yellow
-    [1.0,  0.0,  1.0,  1.0],    // Left face: purple
+  const plasticColors = [
+    [1.0, 0.0, 0.0, 1.0],
+    [1.0, 0.5, 0.0, 1.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 1.0, 1.0],
+    [0.0, 0.0, 1.0, 1.0],
+    [1.0, 0.0, 1.0, 1.0]
   ];
 
-  // Convert the array of colors into a table for all the vertices.
-
   var colors = [];
-
-  for (var j = 0; j < faceColors.length; ++j) {
-    const c = faceColors[j];
-
-    // Repeat each color four times for the four vertices of the face
-    colors = colors.concat(c, c, c, c);
+  for (var j = 0; j < plasticColors.length; ++j) {
+    const c = plasticColors[j];
+    // Repeat each color four times for the four vertices of the face, times
+    // the six faces of a cube.
+    for (var i = 0; i < 24; ++i) {
+        colors = colors.concat(c);
+    }
   }
 
   const colorBuffer = gl.createBuffer();
@@ -196,8 +208,53 @@ function initBuffers(gl) {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(indices), gl.STATIC_DRAW);
 
+  const normalBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+
+  const vertexNormals = [
+    // Front
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
+     0.0,  0.0,  1.0,
+
+    // Back
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
+     0.0,  0.0, -1.0,
+
+    // Top
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
+     0.0,  1.0,  0.0,
+
+    // Bottom
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+     0.0, -1.0,  0.0,
+
+    // Right
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+     1.0,  0.0,  0.0,
+
+    // Left
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0,
+    -1.0,  0.0,  0.0
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals),
+                gl.STATIC_DRAW);
+
   return {
     position: positionBuffer,
+    normal: normalBuffer,
     color: colorBuffer,
     indices: indexBuffer,
   };
@@ -207,7 +264,7 @@ function initBuffers(gl) {
 // Draw the scene.
 //
 function drawScene(gl, programInfo, buffers, deltaTime) {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
+  gl.clearColor(1.0, 1.0, 1.0, 1.0);  // Clear to black, fully opaque
   gl.clearDepth(1.0);                 // Clear everything
   gl.enable(gl.DEPTH_TEST);           // Enable depth testing
   gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -246,16 +303,116 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
   mat4.translate(modelViewMatrix,     // destination matrix
                  modelViewMatrix,     // matrix to translate
-                 [-0.0, 0.0, -6.0]);  // amount to translate
+                 [-0.0, 0.0, -20.0]);  // amount to translate
   mat4.rotate(modelViewMatrix,  // destination matrix
               modelViewMatrix,  // matrix to rotate
               cubeRotation,     // amount to rotate in radians
               [0, 0, 1]);       // axis to rotate around (Z)
   mat4.rotate(modelViewMatrix,  // destination matrix
               modelViewMatrix,  // matrix to rotate
-              cubeRotation * .7,// amount to rotate in radians
+              cubeRotation * .27,// amount to rotate in radians
               [0, 1, 0]);       // axis to rotate around (X)
+  mat4.rotate(modelViewMatrix,  // destination matrix
+              modelViewMatrix,  // matrix to rotate
+              cubeRotation * .37,// amount to rotate in radians
+              [1, 0, 0]);       // axis to rotate around (Y)
 
+  const normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelViewMatrix);
+  mat4.transpose(normalMatrix, normalMatrix);
+
+  function translateView(v) {
+    mat4.translate(modelViewMatrix, modelViewMatrix, v);
+    gl.uniformMatrix4fv(
+        programInfo.uniformLocations.modelViewMatrix,
+        false,
+        modelViewMatrix);
+  }
+
+  // Tell WebGL to use our program when drawing
+  gl.useProgram(programInfo.program);
+
+  // Set the shader uniforms
+  gl.uniformMatrix4fv(
+      programInfo.uniformLocations.projectionMatrix,
+      false,
+      projectionMatrix);
+
+  gl.uniformMatrix4fv(
+      programInfo.uniformLocations.modelViewMatrix,
+      false,
+      modelViewMatrix);
+
+  gl.uniformMatrix4fv(
+      programInfo.uniformLocations.normalMatrix,
+      false,
+      normalMatrix);
+
+  function negative(p) {
+    return [-p[0], -p[1], -p[2]];
+  }
+  //function 
+  function drawPiece(piece) {
+    for (var i = 0; i < piece.cubePositions.length; ++i) {
+      const positions = piece.cubePositions[i];
+      translateView(positions);
+      drawCube(gl, programInfo, buffers, piece.color);
+      translateView(negative(positions));
+    }
+  }
+  const redPiece = {
+    color: 0,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 0,  4,  0],
+      [ 2,  2,  0],
+    ]
+  };
+  const greenPiece = {
+    color: 3,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 2,  2,  0],
+      [ 2,  4,  0],
+    ]
+  };
+  const orangePiece = {
+    color: 1,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 2,  0,  0],
+      [ 0,  0,  2],
+    ]
+  };
+  const pinkPiece = {
+    color: 6,
+    cubePositions: [
+      [ 0,  0,  0],
+      [ 0,  2,  0],
+      [ 2,  2,  0],
+      [ 4,  2,  0],
+    ]
+  };
+
+  drawPiece(redPiece);
+
+  translateView([0, 0, 2]);  
+  drawPiece(greenPiece);
+
+  translateView([0, 0, 2]);  
+  drawPiece(orangePiece);
+
+  translateView([0, 0, 2]);  
+  drawPiece(pinkPiece);
+
+  // Update the rotation for the next draw
+  cubeRotation += deltaTime;
+}
+
+function drawCube(gl, programInfo, buffers, colorIndex) {
   // Tell WebGL how to pull out the positions from the position
   // buffer into the vertexPosition attribute
   {
@@ -283,7 +440,10 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     const type = gl.FLOAT;
     const normalize = false;
     const stride = 0;
-    const offset = 0;
+    const bytesPerFloat = 4;
+    const numFaces = 6;
+    const verticesPerFace = 4;
+    const offset = colorIndex * numFaces * verticesPerFace * numComponents * bytesPerFloat;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
     gl.vertexAttribPointer(
         programInfo.attribLocations.vertexColor,
@@ -296,23 +456,28 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
         programInfo.attribLocations.vertexColor);
   }
 
+  // Tell WebGL how to pull out the normals from
+  // the normal buffer into the vertexNormal attribute.
+  {
+    const numComponents = 3;
+    const type = gl.FLOAT;
+    const normalize = false;
+    const stride = 0;
+    const offset = 0;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+    gl.vertexAttribPointer(
+        programInfo.attribLocations.vertexNormal,
+        numComponents,
+        type,
+        normalize,
+        stride,
+        offset);
+    gl.enableVertexAttribArray(
+        programInfo.attribLocations.vertexNormal);
+  }
+
   // Tell WebGL which indices to use to index the vertices
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-
-  // Tell WebGL to use our program when drawing
-
-  gl.useProgram(programInfo.program);
-
-  // Set the shader uniforms
-
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.projectionMatrix,
-      false,
-      projectionMatrix);
-  gl.uniformMatrix4fv(
-      programInfo.uniformLocations.modelViewMatrix,
-      false,
-      modelViewMatrix);
 
   {
     const vertexCount = 36;
@@ -320,10 +485,6 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     const offset = 0;
     gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
   }
-
-  // Update the rotation for the next draw
-
-  cubeRotation += deltaTime;
 }
 
 //
