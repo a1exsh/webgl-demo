@@ -108,28 +108,31 @@ function main() {
   requestAnimationFrame(render);
 }
 
-var unusedPieces = [0, 1, 2, 3, 4, 5, 6].reverse();
+var unusedPieceColors = [0, 1, 2, 3, 4, 5, 6].reverse();
 var moves = [];
 
 function nextMove() {
     if (moves.length > 0) {
         var move = moves[moves.length - 1];
-        var pos = move.pos;
         if (move.stage == "probe") {
-            if (putPiece(move.piece, pos, "probe")) {
-                putPiece(move.piece, pos, "put");
+            if (makeMove(move)) {
                 move.stage = "put";
+                makeMove(move);
                 takeNextUnusedPiece();
             } else {
-                if (!advanceProbePosition(pos)) {
-                    moves.pop();
-                    unusedPieces.push(move.piece);
+                if (!advancePieceRotation(move)) {
+                    move.rot = [0, 0, 0];
+                    if (!advanceProbePosition(move.pos)) {
+                        moves.pop();
+                        unusedPieceColors.push(move.color);
+                    }
                 }
             }
         } else {
-            putPiece(move.piece, pos, "del");
+            move.stage = "del";
+            makeMove(move);
             move.stage = "probe";
-            advanceProbePosition(pos);
+            advanceProbePosition(move.pos);
         }
     } else {
         takeNextUnusedPiece();
@@ -155,16 +158,41 @@ function advanceProbePosition(pos) {
     return true;
 }
 
+function advancePieceRotation(move) {
+    var rot = move.rot;
+    move.piece = rotatedPieceX(move.piece);
+    if (rot[0] < 2) {
+        ++rot[0];
+    } else {
+        rot[0] = 0;
+        move.piece = rotatedPieceY(move.piece);
+        if (rot[1] < 3) {
+            ++rot[1];
+        } else {
+            rot[1] = 0;
+            move.piece = rotatedPieceZ(move.piece);
+            if (rot[2] < 3) {
+                ++rot[2];
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 function takeNextUnusedPiece() {
-    var piece = unusedPieces.pop();
-    if (piece != undefined) {
+    var c = unusedPieceColors.pop();
+    if (c != undefined) {
         moves.push({
-            piece: piece,
+            color: c,
+            piece: pieces[c],
             stage: "probe",
             pos: [0, 0, 0],
             rot: [0, 0, 0]
         });
     } else {
+        // what?
     }
 }
 
@@ -198,13 +226,84 @@ const pieces = [
       [1, 0, 0]]],
 ];
 
-function putPiece(p, pos, mode) {
-    const piece = pieces[p];
-    for (var z = 0; z < piece.length; ++z) {
+/*
+    // red
+    [[[1, 0],
+      [1, 1],
+      [1, 0]]] 
+*/
+function rotatedPieceZ(p) {
+    const zr = p.length;
+    const yr = p[0][0].length;
+    const xr = p[0].length;
+    var r = new Array(zr);
+    for (var z = 0; z < zr; ++z) {
+        r[z] = new Array(yr);
+        for (var y = 0; y < yr; ++y) {
+            r[z][y] = new Array(xr);
+            for (var x = 0; x < xr; ++x) {
+                r[z][y][x] = p[z][x][(yr-1) - y];
+            }
+        }
+    }
+    return r;
+}
+
+/*
+    // red
+    [[[1],[0]],
+     [[1],[1]],
+     [[1],[0]]]
+*/
+function rotatedPieceY(p) {
+    const zr = p[0][0].length;
+    const yr = p[0].length;
+    const xr = p.length;
+    var r = new Array(zr);
+    for (var z = 0; z < zr; ++z) {
+        r[z] = new Array(yr);
+        for (var y = 0; y < yr; ++y) {
+            r[z][y] = new Array(xr);
+            for (var x = 0; x < xr; ++x) {
+                r[z][y][x] = p[(xr-1) - x][y][z];
+            }
+        }
+    }
+    return r;
+}
+
+/*
+    // red
+    [[[1, 1, 1],
+      [0, 1, 0]]],
+
+    [[[1, 1, 1]],
+     [[0, 1, 0]]]
+*/
+function rotatedPieceX(p) {
+    const zr = p[0].length;
+    const yr = p.length;
+    const xr = p[0][0].length;
+    var r = new Array(zr);
+    for (var z = 0; z < zr; ++z) {
+        r[z] = new Array(yr);
+        for (var y = 0; y < yr; ++y) {
+            r[z][y] = new Array(xr);
+            for (var x = 0; x < xr; ++x) {
+                r[z][y][x] = p[y][(zr-1) - z][x];
+            }
+        }
+    }
+    return r;
+}
+
+function makeMove(move) {
+    const pos = move.pos;
+    for (var z = 0; z < move.piece.length; ++z) {
         const cz = pos[2] + z;
         if (cz >= 3)
             return false;
-        const zp = piece[z];
+        const zp = move.piece[z];
         for (var y = 0; y < zp.length; ++y) {
             const cy = pos[1] + y;
             if (cy >= 3)
@@ -215,13 +314,13 @@ function putPiece(p, pos, mode) {
                 if (cx >= 3)
                     return false;
                 if (yp[x] != 0) {
-                    if (mode == "del") {
+                    if (move.stage == "del") {
                         cube[cz][cy][cx] = null;
                     } else {
                         if (cube[cz][cy][cx] != null)
                             return false;
-                        if (mode == "put") {
-                            cube[cz][cy][cx] = p;
+                        if (move.stage == "put") {
+                            cube[cz][cy][cx] = move.color;
                         }
                     }
                 }
@@ -465,7 +564,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   translateView([0.0, 0.0, -14.0]);
   rotateView(cubeRotation, [0, 0, 1]);
   rotateView(cubeRotation * 0.5, [0, 1, 0]);
-  rotateView(cubeRotation * 0.33, [1, 0, 0]);
+  rotateView(cubeRotation * 0.66, [1, 0, 0]);
 
   // Set the shader uniforms
   gl.uniformMatrix4fv(
