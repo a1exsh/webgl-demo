@@ -218,7 +218,7 @@ function advanceProbePosition(pos) {
 function advancePieceRotation(move) {
     var rot = move.rot;
     move.piece = rotatedPieceX(move.piece);
-    if (rot[0] < 2) {
+    if (rot[0] < 3) {
         ++rot[0];
     } else {
         rot[0] = 0;
