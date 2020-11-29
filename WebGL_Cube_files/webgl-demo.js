@@ -137,15 +137,15 @@ function nextMove() {
 }
 
 function advanceProbePosition(pos) {
-    if (pos[0] < 3) {
+    if (pos[0] < 2) {
         ++pos[0];
     } else {
         pos[0] = 0;
-        if (pos[1] < 3) {
+        if (pos[1] < 2) {
             ++pos[1];
         } else {
             pos[1] = 0;
-            if (pos[2] < 3) {
+            if (pos[2] < 2) {
                 ++pos[2];
             } else {
                 return false;
