@@ -12,6 +12,41 @@ var cube = [
    [null, null, null],],
 ];
 
+const pieces = [
+    // red
+    [[[1, 1, 1],
+      [0, 1, 0]]],
+    // orange
+    [[[1, 1],
+      [1, 0]],
+     [[1, 0],
+      [0, 0]]],
+    // yellow
+    [[[1, 1],
+      [1, 0]]],
+    // green
+    [[[0, 1, 1],
+      [1, 1, 0]]],
+    // cyan
+    [[[1, 1],
+      [1, 0]],
+     [[0, 0],
+      [1, 0]]],
+    // blue
+    [[[1, 1],
+      [1, 0]],
+     [[0, 1],
+      [0, 0]]],
+    // pink
+    [[[1, 1, 1],
+      [1, 0, 0]]],
+];
+
+var unusedPieceColors = [0, 1, 2, 3, 4, 5, 6].reverse();
+var moves = [];
+
+var theEnd = false;
+
 main();
 
 //
@@ -100,42 +135,60 @@ function main() {
     const deltaTime = now - then;
     then = now;
 
+    nextMove();
     drawScene(gl, programInfo, buffers, deltaTime);
 
-    requestAnimationFrame(render);
-    nextMove();
+    if (!theEnd) {
+        requestAnimationFrame(render);
+    }
   }
+  takeNextUnusedPiece();
   requestAnimationFrame(render);
 }
 
-var unusedPieceColors = [0, 1, 2, 3, 4, 5, 6].reverse();
-var moves = [];
+function takeNextUnusedPiece() {
+    var c = unusedPieceColors.pop();
+    if (c != undefined) {
+        moves.push({
+            color: c,
+            piece: pieces[c],
+            stage: "probe",
+            pos: [0, 0, 0],
+            rot: [0, 0, 0]
+        });
+        return true;
+    } else {
+        return false;
+    }
+}
 
 function nextMove() {
-    if (moves.length > 0) {
-        var move = moves[moves.length - 1];
-        if (move.stage == "probe") {
-            if (makeMove(move)) {
-                move.stage = "put";
-                makeMove(move);
-                takeNextUnusedPiece();
-            } else {
-                if (!advancePieceRotation(move)) {
-                    move.rot = [0, 0, 0];
-                    if (!advanceProbePosition(move.pos)) {
-                        moves.pop();
-                        unusedPieceColors.push(move.color);
-                    }
-                }
+    if (moves.length == 0) {
+        console.log("END");
+        theEnd = true;
+        return;
+    }
+    var move = moves[moves.length - 1];
+    if (move.stage == "probe") {
+        if (makeMove(move)) {
+            move.stage = "put";
+            makeMove(move);
+            if (!takeNextUnusedPiece()) {
+                console.log("SOLVED!!! " + cube);
             }
         } else {
-            move.stage = "del";
-            makeMove(move);
-            move.stage = "probe";
-            advanceProbePosition(move.pos);
+            if (!advancePieceRotation(move)) {
+                if (!advanceProbePosition(move.pos)) {
+                    moves.pop();
+                    unusedPieceColors.push(move.color);
+                }
+            }
         }
     } else {
-        takeNextUnusedPiece();
+        move.stage = "del";
+        makeMove(move);
+        move.stage = "probe";
+        advanceProbePosition(move.pos);
     }
 }
 
@@ -174,57 +227,13 @@ function advancePieceRotation(move) {
             if (rot[2] < 3) {
                 ++rot[2];
             } else {
+                rot[2] = 0;
                 return false;
             }
         }
     }
     return true;
 }
-
-function takeNextUnusedPiece() {
-    var c = unusedPieceColors.pop();
-    if (c != undefined) {
-        moves.push({
-            color: c,
-            piece: pieces[c],
-            stage: "probe",
-            pos: [0, 0, 0],
-            rot: [0, 0, 0]
-        });
-    } else {
-        // what?
-    }
-}
-
-const pieces = [
-    // red
-    [[[1, 1, 1],
-      [0, 1, 0]]],
-    // orange
-    [[[1, 1],
-      [1, 0]],
-     [[1, 0],
-      [0, 0]]],
-    // yellow
-    [[[1, 1],
-      [1, 0]]],
-    // green
-    [[[0, 1, 1],
-      [1, 1, 0]]],
-    // cyan
-    [[[1, 1],
-      [1, 0]],
-     [[0, 0],
-      [1, 0]]],
-    // blue
-    [[[1, 1],
-      [1, 0]],
-     [[0, 1],
-      [0, 0]]],
-    // pink
-    [[[1, 1, 1],
-      [1, 0, 0]]],
-];
 
 /*
     // red
