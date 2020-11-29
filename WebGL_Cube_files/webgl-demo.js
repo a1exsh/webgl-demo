@@ -1,4 +1,16 @@
 var cubeRotation = 1.0;
+var rotationEnabled = true;
+var cube = [
+  [[null, null, null],
+   [null, null, null],
+   [null, null, null],],
+  [[null, null, null],
+   [null, null, null],
+   [null, null, null],],
+  [[null, null, null],
+   [null, null, null],
+   [null, null, null],],
+];
 
 main();
 
@@ -91,8 +103,132 @@ function main() {
     drawScene(gl, programInfo, buffers, deltaTime);
 
     requestAnimationFrame(render);
+    nextMove();
   }
   requestAnimationFrame(render);
+}
+
+var unusedPieces = [0, 1, 2, 3, 4, 5, 6].reverse();
+var moves = [];
+
+function nextMove() {
+    if (moves.length > 0) {
+        var move = moves[moves.length - 1];
+        var pos = move.pos;
+        if (move.stage == "probe") {
+            if (putPiece(move.piece, pos, "probe")) {
+                putPiece(move.piece, pos, "put");
+                move.stage = "put";
+                takeNextUnusedPiece();
+            } else {
+                if (!advanceProbePosition(pos)) {
+                    moves.pop();
+                    unusedPieces.push(move.piece);
+                }
+            }
+        } else {
+            putPiece(move.piece, pos, "del");
+            move.stage = "probe";
+            advanceProbePosition(pos);
+        }
+    } else {
+        takeNextUnusedPiece();
+    }
+}
+
+function advanceProbePosition(pos) {
+    if (pos[0] < 3) {
+        ++pos[0];
+    } else {
+        pos[0] = 0;
+        if (pos[1] < 3) {
+            ++pos[1];
+        } else {
+            pos[1] = 0;
+            if (pos[2] < 3) {
+                ++pos[2];
+            } else {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function takeNextUnusedPiece() {
+    var piece = unusedPieces.pop();
+    if (piece != undefined) {
+        moves.push({
+            piece: piece,
+            stage: "probe",
+            pos: [0, 0, 0],
+            rot: [0, 0, 0]
+        });
+    } else {
+    }
+}
+
+const pieces = [
+    // red
+    [[[1, 1, 1],
+      [0, 1, 0]]],
+    // orange
+    [[[1, 1],
+      [1, 0]],
+     [[1, 0],
+      [0, 0]]],
+    // yellow
+    [[[1, 1],
+      [1, 0]]],
+    // green
+    [[[0, 1, 1],
+      [1, 1, 0]]],
+    // cyan
+    [[[1, 1],
+      [1, 0]],
+     [[0, 0],
+      [1, 0]]],
+    // blue
+    [[[1, 1],
+      [1, 0]],
+     [[0, 1],
+      [0, 0]]],
+    // pink
+    [[[1, 1, 1],
+      [1, 0, 0]]],
+];
+
+function putPiece(p, pos, mode) {
+    const piece = pieces[p];
+    for (var z = 0; z < piece.length; ++z) {
+        const cz = pos[2] + z;
+        if (cz >= 3)
+            return false;
+        const zp = piece[z];
+        for (var y = 0; y < zp.length; ++y) {
+            const cy = pos[1] + y;
+            if (cy >= 3)
+                return false;
+            const yp = zp[y];
+            for (var x = 0; x < yp.length; ++x) {
+                const cx = pos[0] + x;
+                if (cx >= 3)
+                    return false;
+                if (yp[x] != 0) {
+                    if (mode == "del") {
+                        cube[cz][cy][cx] = null;
+                    } else {
+                        if (cube[cz][cy][cx] != null)
+                            return false;
+                        if (mode == "put") {
+                            cube[cz][cy][cx] = p;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
 }
 
 //
@@ -337,184 +473,99 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       false,
       projectionMatrix);
 
-  function negative(p) {
-    return [-p[0], -p[1], -p[2]];
-  }
-  function drawPiece(piece) {
-    for (var i = 0; i < piece.cubePositions.length; ++i) {
-      const positions = piece.cubePositions[i];
-      translateView(positions);
-      drawCube(gl, programInfo, buffers, piece.color);
-      translateView(negative(positions));
+  function drawCube(colorIndex) {
+    // Tell WebGL how to pull out the positions from the position
+    // buffer into the vertexPosition attribute
+    {
+      const numComponents = 3;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+      gl.vertexAttribPointer(
+          programInfo.attribLocations.vertexPosition,
+          numComponents,
+          type,
+          normalize,
+          stride,
+          offset);
+      gl.enableVertexAttribArray(
+          programInfo.attribLocations.vertexPosition);
+    }
+
+    // Tell WebGL how to pull out the colors from the color buffer
+    // into the vertexColor attribute.
+    {
+      const numComponents = 4;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const bytesPerFloat = 4;
+      const numFaces = 6;
+      const verticesPerFace = 4;
+      const offset = colorIndex * numFaces * verticesPerFace * numComponents * bytesPerFloat;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
+      gl.vertexAttribPointer(
+          programInfo.attribLocations.vertexColor,
+          numComponents,
+          type,
+          normalize,
+          stride,
+          offset);
+      gl.enableVertexAttribArray(
+          programInfo.attribLocations.vertexColor);
+    }
+
+    // Tell WebGL how to pull out the normals from
+    // the normal buffer into the vertexNormal attribute.
+    {
+      const numComponents = 3;
+      const type = gl.FLOAT;
+      const normalize = false;
+      const stride = 0;
+      const offset = 0;
+      gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+      gl.vertexAttribPointer(
+          programInfo.attribLocations.vertexNormal,
+          numComponents,
+          type,
+          normalize,
+          stride,
+          offset);
+      gl.enableVertexAttribArray(
+          programInfo.attribLocations.vertexNormal);
+    }
+
+    // Tell WebGL which indices to use to index the vertices
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
+
+    {
+      const vertexCount = 36;
+      const type = gl.UNSIGNED_SHORT;
+      const offset = 0;
+      gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
   }
-  const redPiece = {
-    color: 0,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 0,  4,  0],
-      [ 2,  2,  0],
-    ]
-  };
-  const orangePiece = {
-    color: 1,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 2,  0,  0],
-      [ 0,  0,  2],
-    ]
-  };
-  const yellowPiece = {
-    color: 2,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 2,  0,  0],
-    ]
-  };
-  const greenPiece = {
-    color: 3,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 2,  2,  0],
-      [ 2,  4,  0],
-    ]
-  };
-  const cyanPiece = {
-    color: 4,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 2,  0,  0],
-      [ 0,  2,  0],
-      [ 0,  2,  2],
-    ]
-  };
-  const bluePiece = {
-    color: 5,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 2,  0,  0],
-      [ 2,  0,  2],
-    ]
-  };
-  const pinkPiece = {
-    color: 6,
-    cubePositions: [
-      [ 0,  0,  0],
-      [ 0,  2,  0],
-      [ 2,  2,  0],
-      [ 4,  2,  0],
-    ]
-  };
 
   translateView([-2, -2, -2]);
-  drawPiece(redPiece);
 
-  rotateView(rad(90), [0, 0, 1]);
-  translateView([0, -4, 0]);
-  drawPiece(orangePiece);
-
-  rotateView(rad(-90), [0, 1, 0]);
-  translateView([0, 0, -4]);
-  drawPiece(bluePiece);
-
-  rotateView(rad(180), [0, 1, 0]);
-  translateView([-4, 0, -4]);
-  drawPiece(greenPiece);
-
-  rotateView(rad(90), [0, 1, 0]);
-  translateView([-4, 0, 0]);
-  drawPiece(cyanPiece);
-
-  rotateView(rad(90), [0, 1, 0]);
-  translateView([-2, 2, 2]);
-  drawPiece(yellowPiece);
-
-  rotateView(rad(-90), [0, 1, 0]);
-  rotateView(rad(-90), [1, 0, 0]);
-  translateView([-2, 0, 2]);
-  drawPiece(pinkPiece);
+  for (var z = 0; z < 3; ++z) {
+    for (var y = 0; y < 3; ++y) {
+      for (var x = 0; x < 3; ++x) {
+        const c = cube[z][y][x];
+        if (c != null) {
+          translateView([2*x, 2*y, 2*z]);
+          drawCube(c);
+          translateView([-2*x, -2*y, -2*z]);
+        }
+      }
+    }
+  }
 
   // Update the rotation for the next draw
-  cubeRotation += deltaTime;
-}
-
-function drawCube(gl, programInfo, buffers, colorIndex) {
-  // Tell WebGL how to pull out the positions from the position
-  // buffer into the vertexPosition attribute
-  {
-    const numComponents = 3;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexPosition,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexPosition);
-  }
-
-  // Tell WebGL how to pull out the colors from the color buffer
-  // into the vertexColor attribute.
-  {
-    const numComponents = 4;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const bytesPerFloat = 4;
-    const numFaces = 6;
-    const verticesPerFace = 4;
-    const offset = colorIndex * numFaces * verticesPerFace * numComponents * bytesPerFloat;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexColor,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexColor);
-  }
-
-  // Tell WebGL how to pull out the normals from
-  // the normal buffer into the vertexNormal attribute.
-  {
-    const numComponents = 3;
-    const type = gl.FLOAT;
-    const normalize = false;
-    const stride = 0;
-    const offset = 0;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-    gl.vertexAttribPointer(
-        programInfo.attribLocations.vertexNormal,
-        numComponents,
-        type,
-        normalize,
-        stride,
-        offset);
-    gl.enableVertexAttribArray(
-        programInfo.attribLocations.vertexNormal);
-  }
-
-  // Tell WebGL which indices to use to index the vertices
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-
-  {
-    const vertexCount = 36;
-    const type = gl.UNSIGNED_SHORT;
-    const offset = 0;
-    gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
+  if (rotationEnabled) {
+    cubeRotation += deltaTime;
   }
 }
 
