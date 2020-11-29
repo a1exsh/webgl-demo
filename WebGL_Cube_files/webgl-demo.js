@@ -177,18 +177,22 @@ function nextMove() {
                 console.log("SOLVED!!! " + cube);
             }
         } else {
-            if (!advancePieceRotation(move)) {
-                if (!advanceProbePosition(move.pos)) {
-                    moves.pop();
-                    unusedPieceColors.push(move.color);
-                }
-            }
+            advanceMove(move);
         }
     } else {
         move.stage = "del";
         makeMove(move);
         move.stage = "probe";
-        advanceProbePosition(move.pos);
+        advanceMove(move);
+    }
+}
+
+function advanceMove(move) {
+    if (!advancePieceRotation(move)) {
+        if (!advanceProbePosition(move.pos)) {
+            moves.pop();
+            unusedPieceColors.push(move.color);
+        }
     }
 }
 
