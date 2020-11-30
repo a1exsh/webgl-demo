@@ -45,6 +45,8 @@ const pieces = [
 var unusedPieceColors = [0, 1, 2, 3, 4, 5, 6].reverse();
 var moves = [];
 
+var framesPerMove = 1;
+var waitCounter = 0;
 var theEnd = false;
 
 main();
@@ -135,7 +137,12 @@ function main() {
     const deltaTime = now - then;
     then = now;
 
-    nextMove();
+      if (waitCounter == 0) {
+          waitCounter = framesPerMove;
+          nextMove();
+      } else {
+          --waitCounter;
+      }
     drawScene(gl, programInfo, buffers, deltaTime);
 
     if (!theEnd) {
