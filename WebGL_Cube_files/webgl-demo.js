@@ -686,7 +686,9 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
                     const py = pos[1] + y;
                     const pz = pos[2] + z;
                     translateView([2*px, 2*py, 2*pz]);
-                    drawCube(move.color);
+                    if (piece[z][y][x] != 0) {
+                        drawCube(move.color);
+                    }
                     translateView([-2*px, -2*py, -2*pz]);
                 }
             }
