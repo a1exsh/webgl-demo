@@ -188,8 +188,8 @@ function nextMove() {
 }
 
 function advanceMove(move) {
-    if (!advancePieceRotation(move)) {
-        if (!advanceProbePosition(move.pos)) {
+    if (!advanceProbePosition(move.pos)) {
+        if (!advancePieceRotation(move)) {
             moves.pop();
             unusedPieceColors.push(move.color);
         }
