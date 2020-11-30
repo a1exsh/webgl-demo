@@ -675,6 +675,24 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     }
   }
 
+    if (moves.length > 0) {
+        const move = moves[moves.length - 1];
+        const pos = move.pos;
+        const piece = move.piece;
+        for (var z = 0; z < piece.length; ++z) {
+            for (var y = 0; y < piece[0].length; ++y) {
+                for (var x = 0; x < piece[0][0].length; ++x) {
+                    const px = pos[0] + x;
+                    const py = pos[1] + y;
+                    const pz = pos[2] + z;
+                    translateView([2*px, 2*py, 2*pz]);
+                    drawCube(move.color);
+                    translateView([-2*px, -2*py, -2*pz]);
+                }
+            }
+        }
+    }
+
   // Update the rotation for the next draw
   if (rotationEnabled) {
     cubeRotation += deltaTime;
