@@ -262,7 +262,7 @@ function rotatedPieceZ(p) {
         for (var y = 0; y < yr; ++y) {
             r[z][y] = new Array(xr);
             for (var x = 0; x < xr; ++x) {
-                r[z][y][x] = p[z][x][(yr-1) - y];
+                r[z][y][x] = p[z][(xr-1) - x][y];
             }
         }
     }
@@ -285,7 +285,7 @@ function rotatedPieceY(p) {
         for (var y = 0; y < yr; ++y) {
             r[z][y] = new Array(xr);
             for (var x = 0; x < xr; ++x) {
-                r[z][y][x] = p[(xr-1) - x][y][z];
+                r[z][y][x] = p[x][y][(zr-1) - z];
             }
         }
     }
@@ -310,7 +310,7 @@ function rotatedPieceX(p) {
         for (var y = 0; y < yr; ++y) {
             r[z][y] = new Array(xr);
             for (var x = 0; x < xr; ++x) {
-                r[z][y][x] = p[y][(zr-1) - z][x];
+                r[z][y][x] = p[(yr-1) - y][z][x];
             }
         }
     }
