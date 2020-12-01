@@ -47,6 +47,7 @@ var moves = [];
 
 var framesPerMove = 1;
 var waitCounter = 0;
+var totalMoves = 0;
 var theEnd = false;
 
 main();
@@ -170,10 +171,11 @@ function takeNextUnusedPiece() {
 }
 
 function nextMove() {
+    ++totalMoves;
     if (moves.length == 0) {
-        console.log("END");
+        console.log("END: total moves " + totalMoves);
         theEnd = true;
-        return;
+        return true;
     }
     var move = moves[moves.length - 1];
     if (move.stage == "probe") {
@@ -182,6 +184,7 @@ function nextMove() {
             makeMove(move);
             if (!takeNextUnusedPiece()) {
                 console.log("SOLVED!!! " + cube);
+                return true;
             }
         } else {
             advanceMove(move);
