@@ -215,6 +215,7 @@ function advanceProbePosition(pos) {
             if (pos[2] < 2) {
                 ++pos[2];
             } else {
+                pos[2] = 0;
                 return false;
             }
         }
