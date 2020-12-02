@@ -596,7 +596,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       false,
       projectionMatrix);
 
-  function drawCube(colorIndex) {
+  function drawCubelet(colorIndex) {
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute
     {
@@ -671,25 +671,24 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     }
   }
 
-  translateView([-2, -2, -2]);
-
-  for (var z = 0; z < 3; ++z) {
-    for (var y = 0; y < 3; ++y) {
-      for (var x = 0; x < 3; ++x) {
-        const c = cube[z][y][x];
-        if (c != null) {
-          translateView([2*x, 2*y, 2*z]);
-          drawCube(c);
-          translateView([-2*x, -2*y, -2*z]);
+    function drawCube(cube) {
+        for (var z = 0; z < 3; ++z) {
+            for (var y = 0; y < 3; ++y) {
+                for (var x = 0; x < 3; ++x) {
+                    const c = cube[z][y][x];
+                    if (c != null) {
+                        translateView([2*x, 2*y, 2*z]);
+                        drawCubelet(c);
+                        translateView([-2*x, -2*y, -2*z]);
+                    }
+                }
+            }
         }
-      }
     }
-  }
+    translateView([-2, -2, -2]);
+    drawCube(cube);
 
-    if (moves.length > 0) {
-        const move = moves[moves.length - 1];
-        const pos = move.pos;
-        const piece = move.piece;
+    function drawPiece(piece, color, pos) {
         for (var z = 0; z < piece.length; ++z) {
             for (var y = 0; y < piece[0].length; ++y) {
                 for (var x = 0; x < piece[0][0].length; ++x) {
@@ -698,12 +697,26 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
                     const pz = pos[2] + z;
                     translateView([2*px, 2*py, 2*pz]);
                     if (piece[z][y][x] != 0) {
-                        drawCube(move.color);
+                        drawCubelet(color);
                     }
                     translateView([-2*px, -2*py, -2*pz]);
                 }
             }
         }
+    }
+    if (moves.length > 0) {
+        const move = moves[moves.length - 1];
+        drawPiece(move.piece, move.color, move.pos);
+        /*
+          // debug piece rotation
+        translateView([10, 0, 0]);
+        const rot = move.rot;
+        rotateView(rad(90*rot[0]), [1, 0, 0]);
+        rotateView(rad(90*rot[1]), [0, 1, 0]);
+        rotateView(rad(90*rot[2]), [0, 0, 1]);
+        drawPiece(pieces[move.color], move.color, move.pos);
+        translateView([-10, 0, 0]);
+        */
     }
 
   // Update the rotation for the next draw
