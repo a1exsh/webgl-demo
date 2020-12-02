@@ -250,12 +250,6 @@ function advancePieceRotation(move) {
     return true;
 }
 
-/*
-    // red
-    [[[1, 0],
-      [1, 1],
-      [1, 0]]] 
-*/
 function rotatedPieceZ(p) {
     const zr = p.length;
     const yr = p[0][0].length;
@@ -273,12 +267,6 @@ function rotatedPieceZ(p) {
     return r;
 }
 
-/*
-    // red
-    [[[1],[0]],
-     [[1],[1]],
-     [[1],[0]]]
-*/
 function rotatedPieceY(p) {
     const zr = p[0][0].length;
     const yr = p[0].length;
@@ -296,14 +284,6 @@ function rotatedPieceY(p) {
     return r;
 }
 
-/*
-    // red
-    [[[1, 1, 1],
-      [0, 1, 0]]],
-
-    [[[1, 1, 1]],
-     [[0, 1, 0]]]
-*/
 function rotatedPieceX(p) {
     const zr = p[0].length;
     const yr = p.length;
