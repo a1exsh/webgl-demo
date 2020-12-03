@@ -1,15 +1,15 @@
 var cubeRotation = 1.0;
 var rotationEnabled = true;
-var cube = [
-  [[0, 0, 0],
-   [0, 0, 0],
-   [0, 0, 0],],
-  [[0, 0, 0],
-   [0, 0, 0],
-   [0, 0, 0],],
-  [[0, 0, 0],
-   [0, 0, 0],
-   [0, 0, 0],],
+var solutions = [
+    [[[0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],],
+     [[0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],],
+     [[0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],],]
 ];
 
 const pieces = [
@@ -45,8 +45,7 @@ const pieces = [
 var unusedPieceColors = [1, 2, 3, 4, 5, 6, 7].reverse();
 var moves = [];
 
-var framesPerMove = 1;
-var waitCounter = 0;
+var movesPerFrame = 1000000;
 var totalMoves = 0;
 var theEnd = false;
 
@@ -138,11 +137,10 @@ function main() {
     const deltaTime = now - then;
     then = now;
 
-      if (waitCounter == 0) {
-          waitCounter = framesPerMove;
-          nextMove();
-      } else {
-          --waitCounter;
+      for (var i = 0; i < movesPerFrame; ++i) {
+          if (!nextMove()) {
+              break;
+          }
       }
     drawScene(gl, programInfo, buffers, deltaTime);
 
@@ -175,7 +173,7 @@ function nextMove() {
     if (moves.length == 0) {
         console.log("END: total moves " + totalMoves);
         theEnd = true;
-        return true;
+        return false;
     }
     var move = moves[moves.length - 1];
     if (move.stage == "probe") {
@@ -183,8 +181,11 @@ function nextMove() {
             move.stage = "put";
             makeMove(move);
             if (!takeNextUnusedPiece()) {
-                console.log("SOLVED!!! " + cube);
-                return true;
+                const cube = solutions[solutions.length - 1];
+                if (uniqueSolution(cube)) {
+                    console.log("New unique solution found:" + cube);
+                    solutions.push(copyCube(cube));
+                }
             }
         } else {
             advanceMove(move);
@@ -195,6 +196,7 @@ function nextMove() {
         move.stage = "probe";
         advanceMove(move);
     }
+    return true;
 }
 
 function advanceMove(move) {
@@ -226,26 +228,33 @@ function advanceProbePosition(pos) {
     return true;
 }
 
-function advancePieceRotation(move) {
-    var rot = move.rot;
-    move.piece = rotatedPieceX(move.piece);
+function advanceRotation(piece, rot) {
+    piece = rotatedPieceX(piece);
     if (rot[0] < 3) {
         ++rot[0];
     } else {
         rot[0] = 0;
-        move.piece = rotatedPieceY(move.piece);
+        piece = rotatedPieceY(piece);
         if (rot[1] < 3) {
             ++rot[1];
         } else {
             rot[1] = 0;
-            move.piece = rotatedPieceZ(move.piece);
+            piece = rotatedPieceZ(piece);
             if (rot[2] < 3) {
                 ++rot[2];
             } else {
                 rot[2] = 0;
-                return false;
+                return null;
             }
         }
+    }
+    return piece;
+}
+
+function advancePieceRotation(move) {
+    move.piece = advanceRotation(move.piece, move.rot);
+    if (move.piece == null) {
+        return false;
     }
     return true;
 }
@@ -302,6 +311,7 @@ function rotatedPieceX(p) {
 }
 
 function makeMove(move) {
+    const cube = solutions[solutions.length - 1];
     const pos = move.pos;
     for (var z = 0; z < move.piece.length; ++z) {
         const cz = pos[2] + z;
@@ -332,6 +342,53 @@ function makeMove(move) {
         }
     }
     return true;
+}
+
+function equalCubes(c, d) {
+    for (var z = 0; z < 3; ++z) {
+        for (var y = 0; y < 3; ++y) {
+            for (var x = 0; x < 3; ++x) {
+                if (c[z][y][x] != d[z][y][x]) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function equivalentCubes(c, d) {
+    var rot = [0, 0, 0];
+    while (d != null) {
+        if (equalCubes(c, d)) {
+            return true;
+        }
+        d = advanceRotation(d, rot);
+    }
+    return false;
+}
+
+function uniqueSolution(c) {
+    for (var i = 0; i < solutions.length - 1; ++i) {
+        if (equivalentCubes(c, solutions[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function copyCube(c) {
+    var r = new Array(3);
+    for (var z = 0; z < 3; ++z) {
+        r[z] = new Array(3);
+        for (var y = 0; y < 3; ++y) {
+            r[z][y] = new Array(3);
+            for (var x = 0; x < 3; ++x) {
+                r[z][y][x] = c[z][y][x];
+            }
+        }
+    }
+    return r;
 }
 
 //
@@ -666,7 +723,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
         }
     }
     translateView([-2, -2, -2]);
-    drawCube(cube);
+    drawCube(solutions[solutions.length - 1]);
 
     function drawPiece(piece, color, pos) {
         for (var z = 0; z < piece.length; ++z) {
