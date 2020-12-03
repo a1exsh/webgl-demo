@@ -139,9 +139,12 @@ function main() {
 
       for (var i = 0; i < movesPerFrame; ++i) {
           if (!nextMove()) {
+              theEnd = true;
               break;
           }
       }
+      updateCountersText();
+
     drawScene(gl, programInfo, buffers, deltaTime);
 
     if (!theEnd) {
@@ -150,6 +153,11 @@ function main() {
   }
   takeNextUnusedPiece();
   requestAnimationFrame(render);
+}
+
+function updateCountersText() {
+    document.getElementById("totalMovesCount").innerText = totalMoves;
+    document.getElementById("uniqueSolutionsCount").innerText = solutions.length - 1;
 }
 
 function takeNextUnusedPiece() {
@@ -169,12 +177,12 @@ function takeNextUnusedPiece() {
 }
 
 function nextMove() {
-    ++totalMoves;
     if (moves.length == 0) {
         console.log("END: total moves " + totalMoves);
-        theEnd = true;
         return false;
     }
+    ++totalMoves;
+
     var move = moves[moves.length - 1];
     if (move.stage == "probe") {
         if (makeMove(move)) {
