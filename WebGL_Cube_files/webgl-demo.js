@@ -1,15 +1,15 @@
 var cubeRotation = 1.0;
 var rotationEnabled = true;
 var cube = [
-  [[null, null, null],
-   [null, null, null],
-   [null, null, null],],
-  [[null, null, null],
-   [null, null, null],
-   [null, null, null],],
-  [[null, null, null],
-   [null, null, null],
-   [null, null, null],],
+  [[0, 0, 0],
+   [0, 0, 0],
+   [0, 0, 0],],
+  [[0, 0, 0],
+   [0, 0, 0],
+   [0, 0, 0],],
+  [[0, 0, 0],
+   [0, 0, 0],
+   [0, 0, 0],],
 ];
 
 const pieces = [
@@ -42,7 +42,7 @@ const pieces = [
       [1, 0, 0]]],
 ];
 
-var unusedPieceColors = [0, 1, 2, 3, 4, 5, 6].reverse();
+var unusedPieceColors = [1, 2, 3, 4, 5, 6, 7].reverse();
 var moves = [];
 
 var framesPerMove = 1;
@@ -159,7 +159,7 @@ function takeNextUnusedPiece() {
     if (c != undefined) {
         moves.push({
             color: c,
-            piece: pieces[c],
+            piece: pieces[c - 1],
             stage: "probe",
             pos: [0, 0, 0],
             rot: [0, 0, 0]
@@ -319,9 +319,9 @@ function makeMove(move) {
                     return false;
                 if (yp[x] != 0) {
                     if (move.stage == "del") {
-                        cube[cz][cy][cx] = null;
+                        cube[cz][cy][cx] = 0;
                     } else {
-                        if (cube[cz][cy][cx] != null)
+                        if (cube[cz][cy][cx] != 0)
                             return false;
                         if (move.stage == "put") {
                             cube[cz][cy][cx] = move.color;
@@ -607,7 +607,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
       const bytesPerFloat = 4;
       const numFaces = 6;
       const verticesPerFace = 4;
-      const offset = colorIndex * numFaces * verticesPerFace * numComponents * bytesPerFloat;
+      const offset = (colorIndex - 1) * numFaces * verticesPerFace * numComponents * bytesPerFloat;
       gl.bindBuffer(gl.ARRAY_BUFFER, buffers.color);
       gl.vertexAttribPointer(
           programInfo.attribLocations.vertexColor,
@@ -656,7 +656,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
             for (var y = 0; y < 3; ++y) {
                 for (var x = 0; x < 3; ++x) {
                     const c = cube[z][y][x];
-                    if (c != null) {
+                    if (c != 0) {
                         translateView([2*x, 2*y, 2*z]);
                         drawCubelet(c);
                         translateView([-2*x, -2*y, -2*z]);
