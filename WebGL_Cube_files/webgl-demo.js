@@ -44,6 +44,9 @@ const pieces = [
 ];
 
 var unusedPieceColors = [1, 2, 3, 4, 5, 6, 7].reverse();
+
+var pieceRotations = [];
+
 var moves = [];
 
 var movesPerFrame = 10;
@@ -152,6 +155,8 @@ function main() {
         requestAnimationFrame(render);
     }
   }
+
+  preCalculatePieceRotations();
   takeNextUnusedPiece();
   requestAnimationFrame(render);
 }
@@ -169,7 +174,7 @@ function takeNextUnusedPiece() {
             piece: pieces[c - 1],
             stage: "probe",
             pos: [0, 0, 0],
-            rot: [0, 0, 0]
+            rot: 0
         });
         return true;
     } else {
@@ -192,8 +197,8 @@ function nextMove() {
             if (!takeNextUnusedPiece()) {
                 const cube = solutions[solutions.length - 1];
                 if (uniqueSolution(cube)) {
-                    console.log("New unique solution found:" + cube);
-                    solutions.push(copyCube(cube));
+                    solutions.push(copyPiece(cube));
+                    console.log("Unique solution: " + cube);
                 }
             }
         } else {
@@ -237,6 +242,16 @@ function advanceProbePosition(pos) {
     return true;
 }
 
+function advancePieceRotation(move) {
+    const rotations = pieceRotations[move.color - 1];
+    ++move.rot;
+    if (move.rot < rotations.length) {
+        move.piece = rotations[move.rot];
+        return true;
+    }
+    return false;
+}
+
 function advanceRotation(piece, rot) {
     piece = rotatedPieceX(piece);
     if (rot[0] < 3) {
@@ -260,12 +275,31 @@ function advanceRotation(piece, rot) {
     return piece;
 }
 
-function advancePieceRotation(move) {
-    move.piece = advanceRotation(move.piece, move.rot);
-    if (move.piece == null) {
-        return false;
+function listContainsPiece(list, p) {
+    for (var i = 0; i < list.length; ++i) {
+        if (equalPieces(list[i], p)) {
+            return true;
+        }
     }
-    return true;
+    return false;
+}
+
+function uniquePieceRotations(piece) {
+    var rotations = [];
+    var rot = [0, 0, 0];
+    while (piece != null) {
+        if (!listContainsPiece(rotations, piece)) {
+            rotations.push(piece);
+        }
+        piece = advanceRotation(piece, rot);
+    }
+    return rotations;
+}
+
+function preCalculatePieceRotations() {
+    for (var i = 0; i < pieces.length; ++i) {
+        pieceRotations.push(uniquePieceRotations(pieces[i]));
+    }
 }
 
 function rotatedPieceZ(p) {
@@ -353,11 +387,19 @@ function makeMove(move) {
     return true;
 }
 
-function equalCubes(c, d) {
-    for (var z = 0; z < 3; ++z) {
-        for (var y = 0; y < 3; ++y) {
-            for (var x = 0; x < 3; ++x) {
-                if (c[z][y][x] != d[z][y][x]) {
+function equalPieces(p, q) {
+    const pz = p.length;
+    const py = p[0].length;
+    const px = p[0][0].length;
+    if (pz != q.length ||
+        py != q[0].length ||
+        px != q[0][0].length) {
+        return false;
+    }
+    for (var z = 0; z < pz; ++z) {
+        for (var y = 0; y < py; ++y) {
+            for (var x = 0; x < px; ++x) {
+                if (p[z][y][x] != q[z][y][x]) {
                     return false;
                 }
             }
@@ -369,7 +411,7 @@ function equalCubes(c, d) {
 function equivalentCubes(c, d) {
     var rot = [0, 0, 0];
     while (d != null) {
-        if (equalCubes(c, d)) {
+        if (equalPieces(c, d)) {
             return true;
         }
         d = advanceRotation(d, rot);
@@ -386,14 +428,17 @@ function uniqueSolution(c) {
     return true;
 }
 
-function copyCube(c) {
-    var r = new Array(3);
-    for (var z = 0; z < 3; ++z) {
-        r[z] = new Array(3);
-        for (var y = 0; y < 3; ++y) {
-            r[z][y] = new Array(3);
-            for (var x = 0; x < 3; ++x) {
-                r[z][y][x] = c[z][y][x];
+function copyPiece(p) {
+    const rz = p.length;
+    const ry = p[0].length;
+    const rx = p[0][0].length;
+    var r = new Array(rz);
+    for (var z = 0; z < rz; ++z) {
+        r[z] = new Array(ry);
+        for (var y = 0; y < ry; ++y) {
+            r[z][y] = new Array(rx);
+            for (var x = 0; x < rx; ++x) {
+                r[z][y][x] = p[z][y][x];
             }
         }
     }
