@@ -1,4 +1,5 @@
 var cubeRotation = 1.0;
+var showProbeMove = false;
 var rotationEnabled = true;
 var solutions = [
     [[[0, 0, 0],
@@ -749,7 +750,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
             }
         }
     }
-    if (moves.length > 0) {
+    if (showProbeMove && moves.length > 0) {
         const move = moves[moves.length - 1];
         drawPiece(move.piece, move.color, move.pos);
         /*
