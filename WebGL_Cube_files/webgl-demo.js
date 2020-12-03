@@ -45,7 +45,7 @@ const pieces = [
 var unusedPieceColors = [1, 2, 3, 4, 5, 6, 7].reverse();
 var moves = [];
 
-var movesPerFrame = 1000000;
+var movesPerFrame = 10;
 var totalMoves = 0;
 var theEnd = false;
 
