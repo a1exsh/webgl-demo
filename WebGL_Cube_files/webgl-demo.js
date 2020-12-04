@@ -137,25 +137,28 @@ function main() {
   var then = 0;
 
   // Draw the scene repeatedly
-  function render(now) {
-    now *= 0.001;  // convert to seconds
-    const deltaTime = now - then;
-    then = now;
+    function render(now) {
+        now *= 0.001;  // convert to seconds
 
-      for (var i = 0; i < movesPerFrame; ++i) {
-          if (!nextMove()) {
-              theEnd = true;
-              break;
-          }
-      }
-      updateCountersText();
+        updateFPS(now, then);
 
-    drawScene(gl, programInfo, buffers, deltaTime);
+        const deltaTime = now - then;
+        then = now;
 
-    if (!theEnd) {
-        requestAnimationFrame(render);
+        for (var i = 0; i < movesPerFrame; ++i) {
+            if (!nextMove()) {
+                theEnd = true;
+                break;
+            }
+        }
+
+        drawScene(gl, programInfo, buffers, deltaTime);
+
+        if (!theEnd) {
+            requestAnimationFrame(render);
+        }
+        updateCountersText();
     }
-  }
 
   preCalculatePieceRotations();
   takeNextUnusedPiece();
@@ -166,6 +169,15 @@ function updateCountersText() {
     document.getElementById("uniqueSolutionsCount").innerText = solutions.length - 1;
     document.getElementById("totalSolutionsCount").innerText = totalSolutions;
     document.getElementById("totalMovesCount").innerText = totalMoves;
+}
+
+function updateFPS(now, then) {
+    /*
+      document.getElementById("timeNow").innerText = now;
+      document.getElementById("timeThen").innerText = then;
+      document.getElementById("timeDelta").innerText = now - then;
+    */
+    document.getElementById("nFPS").innerText = Math.round(1.0 / (now - then));
 }
 
 function takeNextUnusedPiece() {
