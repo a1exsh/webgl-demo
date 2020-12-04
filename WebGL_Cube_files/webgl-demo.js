@@ -50,6 +50,7 @@ var pieceRotations = [];
 var moves = [];
 
 var movesPerFrame = 10;
+var totalSolutions = 0;
 var totalMoves = 0;
 var theEnd = false;
 
@@ -162,8 +163,9 @@ function main() {
 }
 
 function updateCountersText() {
-    document.getElementById("totalMovesCount").innerText = totalMoves;
     document.getElementById("uniqueSolutionsCount").innerText = solutions.length - 1;
+    document.getElementById("totalSolutionsCount").innerText = totalSolutions;
+    document.getElementById("totalMovesCount").innerText = totalMoves;
 }
 
 function takeNextUnusedPiece() {
@@ -195,6 +197,7 @@ function nextMove() {
             move.stage = "put";
             makeMove(move);
             if (!takeNextUnusedPiece()) {
+                ++totalSolutions;
                 const cube = solutions[solutions.length - 1];
                 if (uniqueSolution(cube)) {
                     solutions.push(copyPiece(cube));
