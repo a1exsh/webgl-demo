@@ -153,19 +153,18 @@ function main() {
         const deltaTime = now - then;
         then = now;
 
-        for (var i = 0; i < movesPerFrame; ++i) {
-            if (!nextMove()) {
-                theEnd = true;
-                break;
+        if (!theEnd) {
+            for (var i = 0; i < movesPerFrame; ++i) {
+                if (!nextMove()) {
+                    theEnd = true;
+                    break;
+                }
             }
         }
-
         drawScene(gl, programInfo, buffers, deltaTime * 0.001);
 
-        if (!theEnd) {
-            requestAnimationFrame(render);
-        }
         updateCountersText();
+        requestAnimationFrame(render);
     }
 
   preCalculatePieceRotations();
@@ -672,7 +671,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   const fieldOfView = rad(60);
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 1000.0;
+  const zFar = 2000.0;
   const projectionMatrix = mat4.create();
 
   // note: glmatrix.js always has the first argument
