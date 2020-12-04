@@ -152,7 +152,7 @@ function main() {
             }
         }
 
-        drawScene(gl, programInfo, buffers, deltaTime);
+        drawScene(gl, programInfo, buffers, deltaTime * 0.001);
 
         if (!theEnd) {
             requestAnimationFrame(render);
@@ -171,13 +171,22 @@ function updateCountersText() {
     document.getElementById("totalMovesCount").innerText = totalMoves;
 }
 
-function updateFPS(now, then) {
-    /*
-      document.getElementById("timeNow").innerText = now;
-      document.getElementById("timeThen").innerText = then;
-      document.getElementById("timeDelta").innerText = now - then;
-    */
-    document.getElementById("nFPS").innerText = Math.round(1.0 / (now - then));
+function updateTimeAndFPS(now, then) {
+    document.getElementById("totalTimeSpent").innerText = formatTimeInterval(now);
+    document.getElementById("nFPS").innerText = Math.round(1000.0 / (now - then));
+}
+
+function timePart00(x) {
+    return (x < 10 ? "0" : "") + x.toString()
+}
+
+function formatTimeInterval(millis) {
+    const seconds = Math.floor(millis / 1000.0);
+    const minutes = Math.floor(seconds / 60);
+    const ss = timePart00(seconds % 60);
+    const mm = timePart00(minutes % 60);
+    const hours = Math.floor(minutes / 60);
+    return `${hours}:${mm}:${ss}`;
 }
 
 function takeNextUnusedPiece() {
