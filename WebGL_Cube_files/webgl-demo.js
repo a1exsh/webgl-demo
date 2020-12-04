@@ -2,7 +2,7 @@ var cubeRotation = 1.0;
 var rotationEnabled = false;
 var showProbeMove = false;
 var focusedSolutionIndex = 0;
-var movesPerFrame = 100;
+var movesPerFrame = 10;
 
 var solutions = [
     [[[0, 0, 0],
@@ -138,9 +138,17 @@ function main() {
 
   const focusedSolutionIndexInput = document.getElementById("focusedSolutionIndex");
   focusedSolutionIndexInput.value = focusedSolutionIndex;
-  focusedSolutionIndexInput.onchange = function(event) {
+  focusedSolutionIndexInput.oninput = function(event) {
       if (event.target.value != '') {
           focusedSolutionIndex = parseInt(event.target.value);
+      }
+  }
+
+  const movesPerFrameInput = document.getElementById("movesPerFrame");
+  movesPerFrameInput.value = movesPerFrame;
+  movesPerFrameInput.oninput = function(event) {
+      if (event.target.value != '') {
+          movesPerFrame = parseInt(event.target.value);
       }
   }
 
@@ -174,7 +182,7 @@ function main() {
 
 function updateCountersText() {
     document.getElementById("uniqueSolutionsCount").innerText = solutions.length - 1;
-    document.getElementById("totalSolutionsCount").innerText = totalSolutions;
+    //document.getElementById("totalSolutionsCount").innerText = totalSolutions;
     document.getElementById("totalMovesCount").innerText = totalMoves;
 }
 
