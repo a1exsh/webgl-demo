@@ -1,6 +1,9 @@
 var cubeRotation = 1.0;
+var rotationEnabled = false;
 var showProbeMove = false;
-var rotationEnabled = true;
+var focusedSolutionIndex = 0;
+var movesPerFrame = 100;
+
 var solutions = [
     [[[0, 0, 0],
       [0, 0, 0],
@@ -49,7 +52,6 @@ var pieceRotations = [];
 
 var moves = [];
 
-var movesPerFrame = 10;
 var totalSolutions = 0;
 var totalMoves = 0;
 var theEnd = false;
@@ -134,13 +136,19 @@ function main() {
   // objects we'll be drawing.
   const buffers = initBuffers(gl);
 
+  const focusedSolutionIndexInput = document.getElementById("focusedSolutionIndex");
+  focusedSolutionIndexInput.value = focusedSolutionIndex;
+  focusedSolutionIndexInput.onchange = function(event) {
+      if (event.target.value != '') {
+          focusedSolutionIndex = parseInt(event.target.value);
+      }
+  }
+
   var then = 0;
 
   // Draw the scene repeatedly
     function render(now) {
-        now *= 0.001;  // convert to seconds
-
-        updateFPS(now, then);
+        updateTimeAndFPS(now, then);
 
         const deltaTime = now - then;
         then = now;
@@ -664,7 +672,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   const fieldOfView = rad(60);
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 100.0;
+  const zFar = 1000.0;
   const projectionMatrix = mat4.create();
 
   // note: glmatrix.js always has the first argument
@@ -677,7 +685,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
   // Set the drawing position to the "identity" point, which is
   // the center of the scene.
-  const modelViewMatrix = mat4.create();
+  var modelViewMatrix = mat4.create();
 
   function updateModelView() {
     gl.uniformMatrix4fv(
@@ -701,11 +709,6 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     mat4.rotate(modelViewMatrix, modelViewMatrix, a, v);
     updateModelView();
   }
-
-  translateView([0.0, 0.0, -14.0]);
-  rotateView(cubeRotation, [0, 0, 1]);
-  rotateView(cubeRotation * 0.5, [0, 1, 0]);
-  rotateView(cubeRotation * 0.66, [1, 0, 0]);
 
   // Set the shader uniforms
   gl.uniformMatrix4fv(
@@ -802,21 +805,37 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
             }
         }
     }
-    translateView([-2, -2, -2]);
-    drawCube(solutions[solutions.length - 1]);
+    // solutions carousell
+    const sols = solutions.length;
+    const sector = rad(360.0/sols);
+    const radius = 6*(sols + 1) / Math.PI;
+    for (var i = 0; i < sols; ++i) {
+        modelViewMatrix = mat4.create();
+        translateView([0.0, 0.0, -(14.0 + radius)]);
+        rotateView(sector*(i - focusedSolutionIndex), [0, 1, 0]);
+        translateView([0.0, 0.0, radius]);
+
+        const r = 1;
+        rotateView(r,        [0, 0, 1]);
+        rotateView(r * 0.5,  [0, 1, 0]);
+        rotateView(r * 0.66, [1, 0, 0]);
+
+        translateView([-2, -2, -2]);
+        drawCube(solutions[i]);
+    }
 
     function drawPiece(piece, color, pos) {
         for (var z = 0; z < piece.length; ++z) {
             for (var y = 0; y < piece[0].length; ++y) {
                 for (var x = 0; x < piece[0][0].length; ++x) {
-                    const px = pos[0] + x;
-                    const py = pos[1] + y;
-                    const pz = pos[2] + z;
-                    translateView([2*px, 2*py, 2*pz]);
                     if (piece[z][y][x] != 0) {
+                        const px = pos[0] + x;
+                        const py = pos[1] + y;
+                        const pz = pos[2] + z;
+                        translateView([2*px, 2*py, 2*pz]);
                         drawCubelet(color);
+                        translateView([-2*px, -2*py, -2*pz]);
                     }
-                    translateView([-2*px, -2*py, -2*pz]);
                 }
             }
         }
