@@ -217,24 +217,26 @@ function nextMove() {
 }
 
 function advanceMove(move) {
-    if (!advanceProbePosition(move.pos)) {
-        if (!advancePieceRotation(move)) {
+    if (!advanceMovePosition(move)) {
+        if (!advanceMoveRotation(move)) {
             moves.pop();
             unusedPieceColors.push(move.color);
         }
     }
 }
 
-function advanceProbePosition(pos) {
-    if (pos[0] < 2) {
+function advanceMovePosition(move) {
+    var pos = move.pos;
+    const piece = move.piece;
+    if (pos[0] < 3 - piece.length) {
         ++pos[0];
     } else {
         pos[0] = 0;
-        if (pos[1] < 2) {
+        if (pos[1] < 3 - piece[0].length) {
             ++pos[1];
         } else {
             pos[1] = 0;
-            if (pos[2] < 2) {
+            if (pos[2] < 3 - piece[0][0].length) {
                 ++pos[2];
             } else {
                 pos[2] = 0;
@@ -245,7 +247,7 @@ function advanceProbePosition(pos) {
     return true;
 }
 
-function advancePieceRotation(move) {
+function advanceMoveRotation(move) {
     const rotations = pieceRotations[move.color - 1];
     ++move.rot;
     if (move.rot < rotations.length) {
@@ -255,7 +257,7 @@ function advancePieceRotation(move) {
     return false;
 }
 
-function advanceRotation(piece, rot) {
+function advancePieceRotation(piece, rot) {
     piece = rotatedPieceX(piece);
     if (rot[0] < 3) {
         ++rot[0];
@@ -294,7 +296,7 @@ function uniquePieceRotations(piece) {
         if (!listContainsPiece(rotations, piece)) {
             rotations.push(piece);
         }
-        piece = advanceRotation(piece, rot);
+        piece = advancePieceRotation(piece, rot);
     }
     return rotations;
 }
@@ -360,7 +362,7 @@ function makeMove(move) {
     const cube = solutions[solutions.length - 1];
     const pos = move.pos;
     for (var z = 0; z < move.piece.length; ++z) {
-        const cz = pos[2] + z;
+        const cz = pos[0] + z;
         if (cz >= 3)
             return false;
         const zp = move.piece[z];
@@ -370,7 +372,7 @@ function makeMove(move) {
                 return false;
             const yp = zp[y];
             for (var x = 0; x < yp.length; ++x) {
-                const cx = pos[0] + x;
+                const cx = pos[2] + x;
                 if (cx >= 3)
                     return false;
                 if (yp[x] != 0) {
@@ -417,7 +419,7 @@ function equivalentCubes(c, d) {
         if (equalPieces(c, d)) {
             return true;
         }
-        d = advanceRotation(d, rot);
+        d = advancePieceRotation(d, rot);
     }
     return false;
 }
