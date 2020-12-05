@@ -1,7 +1,7 @@
 var cubeRotation = 1.0;
 var rotationEnabled = false;
 var showProbeMove = false;
-var focusedSolutionIndex = 0;
+var focusedSolutionIndex = -1;
 var movesPerFrame = 10;
 
 var solutions = [
@@ -679,7 +679,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
   const fieldOfView = rad(60);
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const zNear = 0.1;
-  const zFar = 2000.0;
+  const zFar = 100.0;
   const projectionMatrix = mat4.create();
 
   // note: glmatrix.js always has the first argument
@@ -814,13 +814,16 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     }
     // solutions carousell
     const sols = solutions.length;
-    const sector = rad(360.0/sols);
-    const radius = 6*(sols + 1) / Math.PI;
+    const focusIndex = (focusedSolutionIndex % sols + sols) % sols;
+    const solsPerLevel = Math.sqrt(sols);
+    const sector = rad(360.0/solsPerLevel);
+    const levelStep = 10.0/solsPerLevel;
+    const radius = 6*(solsPerLevel + 1) / Math.PI;
     for (var i = 0; i < sols; ++i) {
         modelViewMatrix = mat4.create();
         translateView([0.0, 0.0, -(14.0 + radius)]);
-        rotateView(sector*(i - focusedSolutionIndex), [0, 1, 0]);
-        translateView([0.0, 0.0, radius]);
+        rotateView(sector*(i - focusIndex), [0, 1, 0]);
+        translateView([0.0, levelStep*(i - focusIndex), radius]);
 
         const r = 1;
         rotateView(r,        [0, 0, 1]);
