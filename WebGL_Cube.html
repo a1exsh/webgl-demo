@@ -15,10 +15,17 @@
     <canvas id="glcanvas" width="640" height="480"></canvas>
     <p>
       <label for="focusedSolutionIndex">Focused solution: </label>
-      <input id="focusedSolutionIndex" type="number"></input>
+      <input id="focusedSolutionIndex" type="number" step="1"/>
       <br/>
       <label for="movesPerFrame">Moves per frame: </label>
-      <input id="movesPerFrame" type="number"></input>
+      <input id="movesPerFrame" type="number" min="0" step="1" list="suggestedMovesPerFrame"/>
+      <datalist id="suggestedMovesPerFrame">
+        <option value="10"/>
+        <option value="100"/>
+        <option value="1000"/>
+        <option value="10000"/>
+        <option value="100000"/>
+      </datalist>
     </p>
     <p>
       <label>Unique solutions found: </label><span id="uniqueSolutionsCount">0</span>
