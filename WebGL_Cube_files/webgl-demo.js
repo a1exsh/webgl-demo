@@ -55,6 +55,7 @@ var moves = [];
 var totalSolutions = 0;
 var totalMoves = 0;
 var theEnd = false;
+var totalTimeSpent = 0;
 
 main();
 
@@ -156,7 +157,7 @@ function main() {
 
   // Draw the scene repeatedly
     function render(now) {
-        updateTimeAndFPS(now, then);
+        updateTimeSpentAndFPS(now, then);
 
         const deltaTime = now - then;
         then = now;
@@ -186,8 +187,13 @@ function updateCountersText() {
     document.getElementById("totalMovesCount").innerText = totalMoves;
 }
 
-function updateTimeAndFPS(now, then) {
-    document.getElementById("totalTimeSpent").innerText = formatTimeInterval(now);
+function updateTimeSpentAndFPS(now, then) {
+    if (!theEnd) {
+        totalTimeSpent = now;
+    }
+    document.getElementById("totalTimeSpent").innerText =
+        formatTimeInterval(totalTimeSpent) + (theEnd ? " (END)" : "");
+
     document.getElementById("nFPS").innerText = Math.round(1000.0 / (now - then));
 }
 
