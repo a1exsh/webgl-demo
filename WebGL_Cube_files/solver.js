@@ -127,6 +127,8 @@ function makeMove(move) {
 }
 
 function advanceMove(move) {
+    // We can also swap the order of position vs. rotation advancement, due to
+    // both functions resetting the state after exhausting their options:
     if (!advanceMovePosition(move)) {
         if (!advanceMoveRotation(move)) {
             moves.pop();
@@ -149,6 +151,7 @@ function advanceMovePosition(move) {
             if (pos[2] < 3 - piece[0][0].length) {
                 ++pos[2];
             } else {
+                // Reset position, so move advancement continues seamlessly:
                 pos[2] = 0;
                 return false;
             }
@@ -158,13 +161,16 @@ function advanceMovePosition(move) {
 }
 
 function advanceMoveRotation(move) {
+    var canAdvanceFurther = true;
     const rotations = pieceRotations[move.color - 1];
     ++move.rot;
-    if (move.rot < rotations.length) {
-        move.piece = rotations[move.rot];
-        return true;
+    if (move.rot >= rotations.length) {
+        // Reset rotation index, so move advancement continues seamlessly:
+        move.rot = 0;
+        canAdvanceFurther = false;
     }
-    return false;
+    move.piece = rotations[move.rot];
+    return canAdvanceFurther;
 }
 
 function advancePieceRotation(piece, rot) {
