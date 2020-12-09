@@ -97,29 +97,26 @@ function nextMove() {
 
 function makeMove(move) {
     const cube = solutions[solutions.length - 1];
+    const piece = move.piece;
     const pos = move.pos;
-    for (var z = 0; z < move.piece.length; ++z) {
-        const cz = pos[0] + z;
-        if (cz >= 3)
-            return false;
-        const zp = move.piece[z];
+    for (var z = 0; z < piece.length; ++z) {
+        // Here we assume that the piece is positioned to be fully contained
+        // in the cube's grid, so we don't have to check the boundaries:
+        const zc = cube[pos[0] + z];
+        const zp = piece[z];
         for (var y = 0; y < zp.length; ++y) {
-            const cy = pos[1] + y;
-            if (cy >= 3)
-                return false;
+            const yc = zc[pos[1] + y];
             const yp = zp[y];
             for (var x = 0; x < yp.length; ++x) {
                 const cx = pos[2] + x;
-                if (cx >= 3)
-                    return false;
                 if (yp[x] != 0) {
                     if (move.stage == "del") {
-                        cube[cz][cy][cx] = 0;
+                        yc[cx] = 0;
                     } else {
-                        if (cube[cz][cy][cx] != 0)
+                        if (yc[cx] != 0)
                             return false;
                         if (move.stage == "put") {
-                            cube[cz][cy][cx] = move.color;
+                            yc[cx] = move.color;
                         }
                     }
                 }
