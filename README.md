@@ -5,6 +5,12 @@ shapes:
 
 ![Original puzzle pieces](original-pieces.jpg)
 
+## Live demo
+
+[Click here for the demo](https://a1exsh.github.io/webgl-demo/WebGL_Cube.html)
+
+![Screenshot](screenshot.png)
+
 ## Running locally
 
 ```{.sh}
